@@ -57,7 +57,8 @@ The API exposes `/health/live` and database-backed `/health/ready`.
 ## Verification status
 
 The API was built with the local .NET 10 SDK and through Docker, and the smoke script
-passed against the Compose stack on 17 October 2026. The CI workflow has not been run.
+passed against the Compose stack on 17 October 2026. The CI workflow runs on pushes
+and pull requests; check its latest run on GitHub.
 The local restore used `-p:NuGetAudit=false` because the environment could not reach
 NuGet's vulnerability feed; the Docker restore completed without that override.
 
@@ -69,10 +70,10 @@ items and a calculated total. Currency is explicit. Missing order/SKU returns 40
 invalid input returns 400. Cancellation tokens reach the database calls.
 PostgreSQL schema setup remains a demo-only SQL initialization script, not an EF migration system.
 
-This public-candidate code is specific to AcmeCommerce. There is no generic registry,
+This public demo is specific to AcmeCommerce. There is no generic registry,
 OpenAPI parser, commercial connector engine or dependency on AgentBridge.Core.
-No repository was published. Do not mix private commercial code into this directory.
-No open-source license is granted by this starter; choose distribution terms before publication.
+Do not mix private commercial code into this directory. This repository has no
+open-source license; terms for reuse remain undecided.
 
 See `docs/implementation-plan.md` for scope, tool contracts and next acceptance gates.
 
