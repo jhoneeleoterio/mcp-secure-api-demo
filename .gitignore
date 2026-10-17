@@ -6,3 +6,4 @@ obj/
 TestResults/
 __pycache__/
 *.pyc
+/docs/implementation-plan.md
