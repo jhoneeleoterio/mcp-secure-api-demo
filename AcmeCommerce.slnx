@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="src/AcmeCommerce.Contracts/AcmeCommerce.Contracts.csproj" />
+  <Project Path="src/AcmeCommerce.Api/AcmeCommerce.Api.csproj" />
+</Solution>

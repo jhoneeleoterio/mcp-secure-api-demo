@@ -1,0 +1,8 @@
+bin/
+obj/
+.env
+.vs/
+.idea/
+TestResults/
+__pycache__/
+*.pyc
