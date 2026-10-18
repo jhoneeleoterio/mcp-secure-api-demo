@@ -6,8 +6,11 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Logging.ClearProviders();
 builder.Logging.AddJsonConsole();
 builder.Services.AddProblemDetails();
-var connectionString = builder.Configuration.GetConnectionString("AcmeCommerce")
-    ?? throw new InvalidOperationException("ConnectionStrings:AcmeCommerce is required.");
+var neonUrl = builder.Configuration["Neon:DatabaseUrl"];
+var connectionString = string.IsNullOrWhiteSpace(neonUrl)
+    ? builder.Configuration.GetConnectionString("AcmeCommerce")
+        ?? throw new InvalidOperationException("ConnectionStrings:AcmeCommerce or Neon:DatabaseUrl is required.")
+    : NeonConnectionString.FromUrl(neonUrl);
 builder.Services.AddDbContext<CommerceDbContext>(options => options.UseNpgsql(connectionString));
 builder.Services.AddScoped<CommerceQueries>();
 

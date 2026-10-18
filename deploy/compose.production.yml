@@ -1,0 +1,47 @@
+name: acmecommerce
+
+services:
+  api:
+    image: ghcr.io/jhoneeleoterio/mcp-secure-api-demo-api:${IMAGE_TAG:?Set IMAGE_TAG}
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_HTTP_PORTS: 8080
+      Neon__DatabaseUrl: ${NEON_DATABASE_URL:?Set NEON_DATABASE_URL in runtime.env}
+    ports:
+      - "127.0.0.1:5080:8080"
+    mem_limit: 384m
+    restart: unless-stopped
+
+  mcp:
+    image: ghcr.io/jhoneeleoterio/mcp-secure-api-demo-mcp:${IMAGE_TAG:?Set IMAGE_TAG}
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_HTTP_PORTS: 8080
+      Jwt__Issuer: ${JWT_ISSUER:?Set JWT_ISSUER}
+      Jwt__Audience: ${JWT_AUDIENCE:?Set JWT_AUDIENCE}
+      Jwt__SigningKeyBase64: ${JWT_SIGNING_KEY_BASE64:?Set JWT_SIGNING_KEY_BASE64}
+    ports:
+      - "127.0.0.1:5081:8080"
+    mem_limit: 256m
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    environment:
+      PUBLIC_HOST: ${PUBLIC_HOST:?Set PUBLIC_HOST}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - api
+      - mcp
+    mem_limit: 96m
+    restart: unless-stopped
+
+volumes:
+  caddy-data:
+  caddy-config:

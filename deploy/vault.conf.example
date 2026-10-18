@@ -1,0 +1,7 @@
+# Copy to /opt/acmecommerce/vault.conf and fill in the two secret OCIDs.
+# Grant this VM's instance principal read access to these secret bundles.
+OCI_VAULT_NEON_DATABASE_URL_SECRET_OCID=ocid1.vaultsecret.oc1..replace
+OCI_VAULT_JWT_SECRET_OCID=ocid1.vaultsecret.oc1..replace
+JWT_ISSUER=acmecommerce-production
+JWT_AUDIENCE=acmecommerce-mcp
+PUBLIC_HOST=replace-with-your-name.duckdns.org
