@@ -1,0 +1,12 @@
+[Unit]
+Description=Deploy latest verified AcmeCommerce main release
+Wants=network-online.target
+After=network-online.target docker.service
+
+[Service]
+Type=oneshot
+User=deploy
+Group=deploy
+WorkingDirectory=/opt/acmecommerce
+ExecStart=/bin/bash /opt/acmecommerce/current/deploy/poll-release.sh
+
