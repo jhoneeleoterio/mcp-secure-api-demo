@@ -1,6 +1,7 @@
 bin/
 obj/
 .env
+runtime.env
 .vs/
 .idea/
 TestResults/

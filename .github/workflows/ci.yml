@@ -25,3 +25,75 @@ jobs:
       - name: Stop isolated CI stack
         if: always()
         run: docker compose down
+
+  publish:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ghcr.io/jhoneeleoterio/mcp-secure-api-demo-api:${{ github.sha }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.Mcp
+          platforms: linux/amd64
+          push: true
+          tags: ghcr.io/jhoneeleoterio/mcp-secure-api-demo-mcp:${{ github.sha }}
+
+  deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.DEPLOY_ENABLED == 'true'
+    needs: publish
+    runs-on: ubuntu-latest
+    environment: production
+    concurrency:
+      group: oracle-production
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      packages: read
+    env:
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+      DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+      DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+      GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      PUBLIC_HOST: ${{ vars.PUBLIC_HOST }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure SSH
+        run: |
+          test -n "$DEPLOY_HOST" && test -n "$DEPLOY_USER" && test -n "$DEPLOY_SSH_KEY"
+          test -n "$DEPLOY_KNOWN_HOSTS" && test -n "$PUBLIC_HOST"
+          [[ $DEPLOY_HOST =~ ^[a-zA-Z0-9.-]+$ ]]
+          [[ $DEPLOY_USER =~ ^[a-z_][a-z0-9_-]*$ ]]
+          [[ $PUBLIC_HOST =~ ^[a-z0-9.-]+$ ]]
+          printf '%s\n' "$DEPLOY_SSH_KEY" > "$RUNNER_TEMP/deploy-key"
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > "$RUNNER_TEMP/known_hosts"
+          chmod 600 "$RUNNER_TEMP/deploy-key" "$RUNNER_TEMP/known_hosts"
+      - name: Deploy exact commit
+        run: |
+          tar -czf "$RUNNER_TEMP/release.tar.gz" deploy database tests scripts
+          scp -i "$RUNNER_TEMP/deploy-key" -o UserKnownHostsFile="$RUNNER_TEMP/known_hosts" \
+            "$RUNNER_TEMP/release.tar.gz" "$DEPLOY_USER@$DEPLOY_HOST:/opt/acmecommerce/incoming-${GITHUB_SHA}.tar.gz"
+          ssh -i "$RUNNER_TEMP/deploy-key" -o UserKnownHostsFile="$RUNNER_TEMP/known_hosts" \
+            "$DEPLOY_USER@$DEPLOY_HOST" \
+            "mkdir -p /opt/acmecommerce/releases/$GITHUB_SHA && tar -xzf /opt/acmecommerce/incoming-$GITHUB_SHA.tar.gz -C /opt/acmecommerce/releases/$GITHUB_SHA && rm /opt/acmecommerce/incoming-$GITHUB_SHA.tar.gz"
+          printf '%s\n' "$GHCR_TOKEN" | ssh -i "$RUNNER_TEMP/deploy-key" \
+            -o UserKnownHostsFile="$RUNNER_TEMP/known_hosts" "$DEPLOY_USER@$DEPLOY_HOST" \
+            "bash /opt/acmecommerce/releases/$GITHUB_SHA/deploy/deploy.sh $GITHUB_SHA $GITHUB_ACTOR $PUBLIC_HOST"

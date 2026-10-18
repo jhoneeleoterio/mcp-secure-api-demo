@@ -63,7 +63,7 @@ for attempt in range(30):
 else:
     raise RuntimeError("MCP host did not become ready within the startup window")
 
-values = read_env()
+values = read_env(os.environ.get("ACME_ENV_FILE", ROOT / ".env"))
 key = signing_key(values)
 issuer = setting("JWT_ISSUER", values)
 audience = setting("JWT_AUDIENCE", values)

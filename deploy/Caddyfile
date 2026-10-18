@@ -1,0 +1,9 @@
+{$PUBLIC_HOST} {
+    @mcp path /mcp /mcp/*
+    handle @mcp {
+        reverse_proxy mcp:8080
+    }
+    handle {
+        reverse_proxy api:8080
+    }
+}
