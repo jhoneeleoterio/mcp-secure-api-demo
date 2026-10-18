@@ -33,6 +33,32 @@ if [[ -L $root/current && $(readlink -f "$root/current") == "$root/releases/$tag
   exit 0
 fi
 
+# The push workflow publishes both images only after its verification job passes.
+# Never run scripts from a commit until that workflow has completed successfully.
+workflow_status=$(curl --fail --silent --show-error --location --max-time 20 \
+  -H 'Accept: application/vnd.github+json' \
+  "https://api.github.com/repos/jhoneeleoterio/mcp-secure-api-demo/actions/workflows/ci.yml/runs?branch=main&event=push&head_sha=$tag&per_page=10" \
+  | python3 -c '
+import json
+import sys
+
+tag = sys.argv[1]
+runs = json.load(sys.stdin)["workflow_runs"]
+ready = any(
+    run["head_sha"] == tag
+    and run["head_branch"] == "main"
+    and run["event"] == "push"
+    and run["status"] == "completed"
+    and run["conclusion"] == "success"
+    for run in runs
+)
+print("ready" if ready else "pending")
+' "$tag")
+if [[ $workflow_status != ready ]]; then
+  echo "CI and image publication are not complete for $tag"
+  exit 0
+fi
+
 release="$root/releases/$tag"
 if [[ ! -f $release/deploy/deploy.sh ]]; then
   [[ ! -e $release ]] || { echo "Incomplete release directory: $release" >&2; exit 2; }

@@ -43,9 +43,11 @@ if run_compose "$release" "$tag" pull &&
    ACME_BASE_URL=http://127.0.0.1:5080 python3 "$release/tests/smoke.py" &&
    ACME_MCP_BASE_URL=http://127.0.0.1:5081 ACME_ENV_FILE="$runtime" \
      python3 "$release/tests/auth_smoke.py" &&
-   curl --fail --silent --show-error --retry 12 --retry-delay 5 --retry-all-errors \
+   curl --fail --silent --show-error --connect-timeout 10 --max-time 20 \
+     --retry 12 --retry-delay 5 --retry-all-errors \
      "https://$public_host/health/ready" >/dev/null &&
-   [[ $(curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
+   [[ $(curl --silent --show-error --connect-timeout 10 --max-time 20 \
+     --output /dev/null --write-out '%{http_code}' \
      -X POST -H 'Content-Type: application/json' \
      -H 'Accept: application/json, text/event-stream' -d '{}' \
      "https://$public_host/mcp") == 401 ]]; then
