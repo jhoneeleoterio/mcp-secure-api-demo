@@ -25,11 +25,11 @@ The database volume is retained; the sample data is loaded only when the volume 
 ## Deployment
 
 On `main`, GitHub Actions runs the build and smoke tests, then publishes AMD64
-API and MCP images to GHCR. An Oracle Cloud VM deployment can be enabled after
-Neon PostgreSQL, the VM, DNS and secrets are configured. The VM runs the API,
-MCP host and Caddy; Neon hosts the database. Caddy serves HTTPS, with REST routes
-at the site root and protected MCP at `/mcp`. See the
-[deployment guide](deploy/README.md) for setup and limitations.
+API and MCP images to GHCR. An Oracle Cloud VM checks for the latest published
+release every 10 minutes and deploys it without a GitHub SSH secret. The VM runs
+the API, MCP host and Caddy; Neon hosts the database. Caddy serves HTTPS, with
+REST routes at the site root and protected MCP at `/mcp`. See the
+[deployment guide](docs/deployment.md) for setup and limitations.
 
 ## Endpoints
 

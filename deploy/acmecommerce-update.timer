@@ -1,0 +1,11 @@
+[Unit]
+Description=Check for a new AcmeCommerce release
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=10min
+Persistent=true
+Unit=acmecommerce-update.service
+
+[Install]
+WantedBy=timers.target
