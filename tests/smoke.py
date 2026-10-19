@@ -49,4 +49,19 @@ assert get('/inventory/abc-123')[1]['availableQuantity'] == 12
 assert get('/inventory/XYZ-999')[1]['availableQuantity'] == 0
 assert get('/inventory/MISSING')[0] == 404
 assert get('/inventory/bad_sku')[0] == 400
+
+with urllib.request.urlopen(BASE + '/docs', timeout=7) as response:
+    page = response.read()
+    assert response.status == 200 and b'redoc.standalone.js' in page
+    assert b'fonts.googleapis.com' not in page
+
+status, spec = get('/swagger/v1/swagger.json')
+assert status == 200 and spec['info']['title'] == 'AcmeCommerce API'
+assert set(spec['paths']) == {
+    '/health/live', '/health/ready', '/customers', '/orders/{id}', '/inventory/{sku}'
+}
+assert spec['paths']['/customers']['get']['responses']['200']['content']['application/json']['example'] == customers
+assert spec['paths']['/orders/{id}']['get']['responses']['200']['content']['application/json']['example'] == order
+assert spec['paths']['/inventory/{sku}']['get']['responses']['200']['content']['application/json']['example'] == get('/inventory/ABC-123')[1]
+assert spec['paths']['/customers']['get']['parameters'][0]['required']
 print('PASS: customer lookup, order mapping, inventory, validation and missing resources')

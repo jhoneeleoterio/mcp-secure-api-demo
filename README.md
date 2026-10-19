@@ -22,6 +22,9 @@ The API is available at `http://localhost:5080`; the protected MCP endpoint is a
 Stop them with `docker compose down`.
 The database volume is retained; the sample data is loaded only when the volume is empty.
 
+The API reference is available in ReDoc at `http://localhost:5080/docs`. Its
+OpenAPI document is at `http://localhost:5080/swagger/v1/swagger.json`.
+
 ## Deployment
 
 On `main`, GitHub Actions runs the build and smoke tests, then publishes AMD64
