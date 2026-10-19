@@ -33,7 +33,7 @@ if [[ -L $root/current && $(readlink -f "$root/current") == "$root/releases/$tag
   exit 0
 fi
 
-# The push workflow publishes both images only after its verification job passes.
+# The push workflow publishes API, MCP and web images after verification passes.
 # Never run scripts from a commit until that workflow has completed successfully.
 workflow_status=$(curl --fail --silent --show-error --location --max-time 20 \
   -H 'Accept: application/vnd.github+json' \

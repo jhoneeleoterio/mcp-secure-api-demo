@@ -1,0 +1,10 @@
+<div
+  class="feedback"
+  [class.error]="kind === 'error'"
+  [attr.role]="kind === 'error' ? 'alert' : 'status'"
+>
+  <p>{{ message }}</p>
+  @if (retry) {
+    <app-button variant="secondary" label="Tentar novamente" (pressed)="retryClick.emit()" />
+  }
+</div>

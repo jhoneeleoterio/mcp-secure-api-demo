@@ -1,0 +1,22 @@
+<a class="skip-link" href="#main">Ir para o conteúdo</a>
+<app-toolbar [availability]="availability()" />
+<div class="app-shell">
+  <aside class="sidebar" aria-label="Navegação principal">
+    <p class="sidebar-label">Navegação</p>
+    <nav>
+      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"
+        >Início</a
+      >
+      <a routerLink="/customers" routerLinkActive="active">Clientes</a>
+      <a routerLink="/orders" routerLinkActive="active">Pedidos</a>
+      <a routerLink="/inventory" routerLinkActive="active">Estoque</a>
+    </nav>
+    <p class="sidebar-label resources">Desenvolvedor</p>
+    <a class="docs-link" href="/docs">Documentação da API ↗</a>
+    <p class="sidebar-note">Dados fictícios · Consultas somente leitura</p>
+  </aside>
+  <main id="main" class="main-content"><router-outlet /></main>
+</div>
+<footer class="site-footer">
+  <span>AcmeCommerce Demo · Dados fictícios</span><span>Consultas somente leitura</span>
+</footer>

@@ -1,0 +1,41 @@
+@use 'sass:map';
+
+$colors: (
+  ink: #142238,
+  muted: #58677a,
+  primary: #175cd3,
+  primary-dark: #1148ab,
+  primary-soft: #eaf1ff,
+  surface: #ffffff,
+  canvas: #f5f7fb,
+  line: #dfe5ee,
+  success: #166534,
+  success-soft: #e7f6ec,
+  warning: #965600,
+  warning-soft: #fff3dc,
+  danger: #a82626,
+  danger-soft: #fff0ee,
+);
+
+@function color($name) {
+  @return map.get($colors, $name);
+}
+
+@mixin panel($radius: 12px) {
+  background: color(surface);
+  border: 1px solid color(line);
+  border-radius: $radius;
+}
+
+@mixin focus-ring {
+  outline: 3px solid color(primary);
+  outline-offset: 3px;
+}
+
+@mixin muted-label {
+  color: color(muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}

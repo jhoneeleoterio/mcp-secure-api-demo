@@ -1,0 +1,43 @@
+@use '../../styles/theme' as theme;
+
+.search-form {
+  @include theme.panel;
+  padding: 22px;
+  margin-bottom: 24px;
+}
+label {
+  display: block;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+.search-row {
+  display: flex;
+  gap: 10px;
+}
+input {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  padding: 10px 12px;
+  color: theme.color(ink);
+  background: #fff;
+  border: 1px solid #aeb8c9;
+  border-radius: 8px;
+}
+input[aria-invalid='true'] {
+  border-color: theme.color(danger);
+}
+.field-error {
+  color: theme.color(danger);
+  font-size: 0.875rem;
+  margin: 9px 0 0;
+}
+@media (max-width: 520px) {
+  .search-row {
+    flex-direction: column;
+  }
+  app-button {
+    display: flex;
+    width: 100%;
+  }
+}

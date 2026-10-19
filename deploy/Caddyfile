@@ -1,9 +1,20 @@
 {$PUBLIC_HOST} {
-    @mcp path /mcp /mcp/*
-    handle @mcp {
-        reverse_proxy mcp:8080
-    }
-    handle {
-        reverse_proxy api:8080
+    route {
+        @appRoot path /app
+        redir @appRoot /app/ 308
+
+        @mcp path /mcp /mcp/*
+        handle @mcp {
+            reverse_proxy mcp:8080
+        }
+        handle_path /app/* {
+            root * /srv/app
+            header X-Content-Type-Options nosniff
+            try_files {path} /index.html
+            file_server
+        }
+        handle {
+            reverse_proxy api:8080
+        }
     }
 }

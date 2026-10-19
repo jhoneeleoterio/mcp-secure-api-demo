@@ -1,0 +1,66 @@
+<section class="page-heading">
+  <p class="eyebrow">Consulta de registros</p>
+  <h1>Clientes</h1>
+  <p>Pesquise por parte do nome, e-mail ou ID exato.</p>
+</section>
+<app-search-field
+  fieldId="customer-query"
+  label="Nome, e-mail ou ID"
+  placeholder="Ex.: Alice"
+  [maxLength]="100"
+  [(value)]="query"
+  [error]="validationError()"
+  (searched)="submit()"
+/>
+
+@if (state.loading()) {
+  <app-feedback kind="loading" message="Buscando clientes…" />
+} @else if (state.error()) {
+  <app-feedback
+    kind="error"
+    [message]="state.error()!"
+    [retry]="state.canRetry()"
+    (retryClick)="load(query.trim())"
+  />
+} @else if (state.data(); as customers) {
+  @if (customers.length === 0) {
+    <app-feedback kind="empty" message="Nenhum cliente encontrado. Tente outro termo." />
+  } @else {
+    <app-result-list
+      [count]="customers.length"
+      singular="cliente encontrado"
+      plural="clientes encontrados"
+    >
+      @for (customer of customers; track customer.id) {
+        <article class="customer-card">
+          <div class="customer-heading">
+            <span class="avatar" aria-hidden="true">{{ customer.name.charAt(0) }}</span>
+            <div>
+              <h2>{{ customer.name }}</h2>
+              <p>{{ customer.email }}</p>
+            </div>
+            <span class="customer-id">#{{ customer.id }}</span>
+          </div>
+          <div class="customer-details">
+            <div class="customer-detail">
+              <small>Pedido mais recente</small>
+              <strong>{{ customer.latestOrderId === null ? 'Nenhum' : 'Pedido #' + customer.latestOrderId }}</strong>
+            </div>
+            <div class="customer-detail">
+              <small>Origem</small>
+              <strong>Dados de demonstração</strong>
+            </div>
+          </div>
+          @if (customer.latestOrderId !== null) {
+            <app-button
+              [link]="['/orders', customer.latestOrderId]"
+              [label]="'Ver pedido #' + customer.latestOrderId + ' →'"
+            />
+          } @else {
+            <div class="no-order">Sem pedido registrado</div>
+          }
+        </article>
+      }
+    </app-result-list>
+  }
+}

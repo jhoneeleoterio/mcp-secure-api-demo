@@ -1,0 +1,60 @@
+<div class="toolbar" (keydown.escape)="onEscape()">
+  <div class="toolbar-inner">
+    <button
+      type="button"
+      class="menu-toggle"
+      aria-label="Abrir menu"
+      [attr.aria-expanded]="drawerOpen()"
+      aria-controls="mobile-navigation"
+      (click)="drawerOpen.set(true)"
+    >
+      ☰
+    </button>
+    <a class="brand" routerLink="/" (click)="close()"
+      ><span class="brand-icon" aria-hidden="true">A</span
+      ><span>AcmeCommerce <small>Demo</small></span></a
+    >
+    <span class="read-only">Somente leitura</span>
+    <span class="api-state" [class.offline]="availability === 'unavailable'" role="status">
+      @switch (availability) {
+        @case ('ready') {
+          API disponível
+        }
+        @case ('unavailable') {
+          API indisponível
+        }
+        @default {
+          Verificando API…
+        }
+      }
+    </span>
+    <a class="docs-link" href="/docs">Docs API ↗</a>
+  </div>
+</div>
+@if (drawerOpen()) {
+  <button class="backdrop" type="button" aria-label="Fechar menu" (click)="close()"></button>
+}
+<aside
+  id="mobile-navigation"
+  class="drawer"
+  [class.open]="drawerOpen()"
+  [attr.aria-hidden]="!drawerOpen()"
+>
+  <div class="drawer-title">
+    <strong>AcmeCommerce</strong
+    ><button type="button" aria-label="Fechar menu" (click)="close()">✕</button>
+  </div>
+  <nav aria-label="Navegação principal">
+    <a
+      routerLink="/"
+      routerLinkActive="active"
+      [routerLinkActiveOptions]="{ exact: true }"
+      (click)="close()"
+      >Início</a
+    >
+    <a routerLink="/customers" routerLinkActive="active" (click)="close()">Clientes</a>
+    <a routerLink="/orders" routerLinkActive="active" (click)="close()">Pedidos</a>
+    <a routerLink="/inventory" routerLinkActive="active" (click)="close()">Estoque</a>
+  </nav>
+  <a class="drawer-docs" href="/docs">Documentação da API ↗</a>
+</aside>

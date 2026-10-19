@@ -1,0 +1,78 @@
+@use '../styles/theme' as theme;
+
+.app-shell {
+  display: grid;
+  grid-template-columns: 215px minmax(0, 1fr);
+  max-width: 1600px;
+  min-height: calc(100vh - 114px);
+  margin: auto;
+}
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  padding: 30px 14px 22px;
+  background: #fff;
+  border-right: 1px solid theme.color(line);
+}
+.sidebar-label {
+  @include theme.muted-label;
+  margin: 0 12px 15px;
+}
+.sidebar-label.resources {
+  margin-top: 34px;
+}
+nav {
+  display: grid;
+  gap: 4px;
+}
+nav a,
+.docs-link {
+  display: block;
+  padding: 11px 12px;
+  color: theme.color(muted);
+  border-radius: 8px;
+  font-weight: 650;
+  text-decoration: none;
+}
+nav a.active,
+nav a:hover,
+.docs-link:hover {
+  color: theme.color(primary);
+  background: theme.color(primary-soft);
+}
+.docs-link {
+  color: theme.color(primary);
+  font-size: 0.875rem;
+}
+.sidebar-note {
+  margin: auto 12px 0;
+  padding-top: 22px;
+  color: theme.color(muted);
+  font-size: 0.75rem;
+}
+.main-content {
+  width: min(100%, 1230px);
+  padding: 32px clamp(18px, 3vw, 48px) 70px;
+}
+.site-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 14px 26px;
+  color: theme.color(muted);
+  background: #fff;
+  border-top: 1px solid theme.color(line);
+  font-size: 0.75rem;
+}
+@media (max-width: 700px) {
+  .app-shell {
+    display: block;
+    min-height: calc(100vh - 110px);
+  }
+  .sidebar {
+    display: none;
+  }
+  .main-content {
+    padding: 22px 14px 55px;
+  }
+}

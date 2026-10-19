@@ -1,0 +1,23 @@
+@if (link !== undefined) {
+  <a
+    class="button"
+    [class.primary]="variant === 'primary'"
+    [class.secondary]="variant === 'secondary'"
+    [class.ghost]="variant === 'ghost'"
+    [routerLink]="link"
+    [queryParams]="queryParams"
+    >{{ label }}</a
+  >
+} @else {
+  <button
+    class="button"
+    [class.primary]="variant === 'primary'"
+    [class.secondary]="variant === 'secondary'"
+    [class.ghost]="variant === 'ghost'"
+    [type]="type"
+    [disabled]="disabled"
+    (click)="pressed.emit()"
+  >
+    {{ label }}
+  </button>
+}

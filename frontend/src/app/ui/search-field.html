@@ -1,0 +1,21 @@
+<form class="search-form" (ngSubmit)="searched.emit(value.trim())">
+  <label [for]="fieldId">{{ label }}</label>
+  <div class="search-row">
+    <input
+      [id]="fieldId"
+      [name]="fieldId"
+      [ngModel]="value"
+      (ngModelChange)="valueChange.emit($event)"
+      [placeholder]="placeholder"
+      [attr.maxlength]="maxLength"
+      [inputMode]="inputMode"
+      autocomplete="off"
+      [attr.aria-invalid]="error ? true : null"
+      [attr.aria-describedby]="error ? fieldId + '-error' : null"
+    />
+    <app-button type="submit" [label]="buttonLabel" />
+  </div>
+  @if (error) {
+    <p class="field-error" [id]="fieldId + '-error'" role="alert">{{ error }}</p>
+  }
+</form>

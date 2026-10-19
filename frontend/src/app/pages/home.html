@@ -1,0 +1,151 @@
+<section class="intro">
+  <div>
+    <p class="eyebrow">Console de demonstração · Somente leitura</p>
+    <h1>Consulte clientes, pedidos e estoque.</h1>
+    <p>Explore os dados fictícios da AcmeCommerce e acompanhe uma jornada completa de consulta.</p>
+  </div>
+  @if (state.data(); as overview) {
+    <div class="intro-actions">
+      @if (overview.customerWithOrder; as customer) {
+        <app-button
+          link="/customers"
+          [queryParams]="{ query: customer.name }"
+          [label]="'Começar por ' + customer.name"
+        />
+      }
+      <app-button
+        variant="secondary"
+        [link]="['/orders', overview.order.id]"
+        [label]="'Ver pedido #' + overview.order.id"
+      />
+    </div>
+  }
+</section>
+
+@if (state.loading()) {
+  <app-feedback kind="loading" message="Consultando os dados da demonstração…" />
+} @else if (state.error()) {
+  <app-feedback
+    kind="error"
+    [message]="state.error()!"
+    [retry]="state.canRetry()"
+    (retryClick)="load()"
+  />
+} @else if (state.data(); as overview) {
+  <section class="live-summary" aria-label="Dados atuais da demonstração">
+    <p class="eyebrow">Dados da API</p>
+    <div class="summary-grid">
+      <div>
+        <span>Clientes encontrados</span><strong>{{ overview.customers.length }}</strong
+        ><small>Busca por “Demo”</small>
+      </div>
+      <div>
+        <span>Pedido #{{ overview.order.id }}</span
+        ><strong>{{
+          overview.order.total | currency: overview.order.currency : 'symbol' : '1.2-2' : 'pt-BR'
+        }}</strong
+        ><small
+          >{{ overview.order.items.length }}
+          {{ overview.order.items.length === 1 ? 'item' : 'itens' }}</small
+        >
+      </div>
+      <div>
+        <span>SKU {{ overview.stockedProduct.sku }}</span
+        ><strong>{{ overview.stockedProduct.availableQuantity }}</strong
+        ><small>Unidades disponíveis</small>
+      </div>
+      <div>
+        <span>SKU {{ overview.emptyProduct.sku }}</span
+        ><strong>{{ overview.emptyProduct.availableQuantity }}</strong
+        ><small>Unidades disponíveis</small>
+      </div>
+    </div>
+  </section>
+}
+
+<section aria-labelledby="explore-title" class="explore">
+  <div class="section-heading">
+    <div>
+      <p class="eyebrow">Visão geral</p>
+      <h2 id="explore-title">Acesso rápido de consulta</h2>
+    </div>
+    <span class="read-only">Sem alterações nos dados</span>
+  </div>
+  <div class="action-grid">
+    <app-action-card
+      title="Buscar clientes"
+      description="Pesquise os clientes da API"
+      link="/customers"
+      icon="◉"
+    />
+    <app-action-card
+      title="Consultar pedidos"
+      description="Veja status, itens e total"
+      link="/orders"
+      icon="▤"
+    />
+    <app-action-card
+      title="Verificar estoque"
+      description="Consulte a quantidade por SKU"
+      link="/inventory"
+      icon="▦"
+    />
+  </div>
+</section>
+
+@if (state.data(); as overview) {
+  <section class="journey" aria-labelledby="journey-title">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">Demonstração</p>
+        <h2 id="journey-title">Roteiro guiado</h2>
+        <p>Percorra os cenários disponíveis na API.</p>
+      </div>
+    </div>
+    <div class="step-grid">
+      @if (overview.customerWithOrder; as customer) {
+        <article>
+          <span class="step-number">1</span><span class="eyebrow">Cliente com pedido</span>
+          <h3>{{ customer.name }}</h3>
+          <p>Encontre o cliente e abra seu pedido mais recente.</p>
+          <a routerLink="/customers" [queryParams]="{ query: customer.name }">Buscar cliente →</a>
+        </article>
+      }
+      <article>
+        <span class="step-number">2</span><span class="eyebrow">Pedido</span>
+        <h3>Pedido #{{ overview.order.id }}</h3>
+        <p>
+          Status: {{ statusLabel(overview.order.status) }} · Total:
+          {{
+            overview.order.total | currency: overview.order.currency : 'symbol' : '1.2-2' : 'pt-BR'
+          }}.
+        </p>
+        <a [routerLink]="['/orders', overview.order.id]">Consultar pedido →</a>
+      </article>
+      <article>
+        <span class="step-number">3</span><span class="eyebrow">Estoque</span>
+        <h3>{{ overview.stockedProduct.productName }}</h3>
+        <p>
+          SKU {{ overview.stockedProduct.sku }} ·
+          {{ overview.stockedProduct.availableQuantity }} unidades disponíveis.
+        </p>
+        <a [routerLink]="['/inventory', overview.stockedProduct.sku]">Consultar estoque →</a>
+      </article>
+      <article>
+        <span class="step-number">4</span><span class="eyebrow">Casos limítrofes</span>
+        <h3>
+          {{ overview.customerWithoutOrder?.name ?? 'Cliente sem pedido' }} e
+          {{ overview.emptyProduct.sku }}
+        </h3>
+        <p>
+          Cliente sem pedido e {{ overview.emptyProduct.productName }} com
+          {{ overview.emptyProduct.availableQuantity }} unidades.
+        </p>
+        @if (overview.customerWithoutOrder; as customer) {
+          <a routerLink="/customers" [queryParams]="{ query: customer.name }">Buscar cliente →</a>
+        }
+        <a [routerLink]="['/inventory', overview.emptyProduct.sku]">Ver estoque →</a>
+      </article>
+    </div>
+  </section>
+}

@@ -12,6 +12,19 @@ jobs:
           dotnet-version: '10.0.x'
       - run: dotnet restore AcmeCommerce.slnx
       - run: dotnet build AcmeCommerce.slnx -c Release --no-restore
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.15.0'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+        working-directory: frontend
+      - run: npm audit --audit-level=high
+        working-directory: frontend
+      - run: npm test -- --no-watch --no-progress
+        working-directory: frontend
+      - run: npm run build
+        working-directory: frontend
       - name: Start local demo
         run: |
           cp .env.example .env
@@ -55,3 +68,10 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: ghcr.io/jhoneeleoterio/mcp-secure-api-demo-mcp:${{ github.sha }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.Web
+          platforms: linux/amd64
+          push: true
+          tags: ghcr.io/jhoneeleoterio/mcp-secure-api-demo-web:${{ github.sha }}
