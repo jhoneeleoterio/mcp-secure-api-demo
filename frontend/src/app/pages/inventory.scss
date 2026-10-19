@@ -1,0 +1,25 @@
+@use '../../styles/theme' as theme;
+
+.stock-card {
+  @include theme.panel;
+  max-width: 820px;
+  padding: 24px;
+}
+.stock-card h2 {
+  margin: 8px 0 22px;
+}
+.availability {
+  display: grid;
+  gap: 6px;
+  padding: 20px;
+  border-radius: 9px;
+  color: theme.color(success);
+  background: theme.color(success-soft);
+}
+.availability.empty {
+  color: theme.color(danger);
+  background: theme.color(danger-soft);
+}
+.availability strong {
+  font-size: 1.4rem;
+}

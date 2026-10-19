@@ -1,0 +1,17 @@
+@use '../../styles/theme' as theme;
+
+.feedback {
+  @include theme.panel;
+  padding: 22px;
+  background: theme.color(primary-soft);
+}
+.feedback.error {
+  background: theme.color(danger-soft);
+  border-color: #efc9c7;
+}
+p {
+  margin: 0;
+}
+app-button {
+  margin-top: 14px;
+}

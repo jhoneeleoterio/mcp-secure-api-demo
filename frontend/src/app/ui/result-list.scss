@@ -1,0 +1,15 @@
+@use '../../styles/theme' as theme;
+
+.count {
+  color: theme.color(muted);
+  font-size: 0.875rem;
+  font-weight: 700;
+  margin: 0 0 12px;
+}
+.items {
+  display: grid;
+  gap: 14px;
+}
+.items.rows {
+  gap: 0;
+}

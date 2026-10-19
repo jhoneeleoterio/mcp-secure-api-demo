@@ -29,14 +29,27 @@ export interface Inventory {
   availableQuantity: number;
 }
 
+export function orderStatusLabel(status: string): string {
+  return (
+    ({ processing: 'Em processamento', shipped: 'Enviado' } as Record<string, string>)[status] ??
+    status
+  );
+}
+
 @Injectable({ providedIn: 'root' })
 export class CommerceApi {
   private readonly http = inject(HttpClient);
 
-  ready() { return this.http.get<{ status: string }>('/health/ready'); }
+  ready() {
+    return this.http.get<{ status: string }>('/health/ready');
+  }
   customers(query: string) {
     return this.http.get<Customer[]>('/customers', { params: { query } });
   }
-  order(id: number) { return this.http.get<Order>(`/orders/${id}`); }
-  inventory(sku: string) { return this.http.get<Inventory>(`/inventory/${encodeURIComponent(sku)}`); }
+  order(id: number) {
+    return this.http.get<Order>(`/orders/${id}`);
+  }
+  inventory(sku: string) {
+    return this.http.get<Inventory>(`/inventory/${encodeURIComponent(sku)}`);
+  }
 }

@@ -1,0 +1,39 @@
+<section class="page-heading">
+  <p class="eyebrow">Consulta de registros</p>
+  <h1>Estoque</h1>
+  <p>Informe o SKU para conferir a disponibilidade do produto.</p>
+</section>
+<app-search-field
+  fieldId="inventory-sku"
+  label="SKU do produto"
+  placeholder="Ex.: ABC-123"
+  buttonLabel="Consultar"
+  [maxLength]="64"
+  [(value)]="skuInput"
+  [error]="validationError()"
+  (searched)="submit()"
+/>
+
+@if (state.loading()) {
+  <app-feedback kind="loading" message="Consultando estoque…" />
+} @else if (state.error()) {
+  <app-feedback
+    kind="error"
+    [message]="state.error()!"
+    [retry]="state.canRetry()"
+    (retryClick)="load(skuInput.toUpperCase())"
+  />
+} @else if (state.data(); as product) {
+  <section class="stock-card" aria-label="Estoque do produto">
+    <p class="eyebrow">SKU {{ product.sku }}</p>
+    <h2>{{ product.productName }}</h2>
+    <div class="availability" [class.empty]="product.availableQuantity === 0">
+      <span>Disponibilidade</span
+      ><strong>{{
+        product.availableQuantity === 0
+          ? 'Sem estoque'
+          : product.availableQuantity + ' unidades disponíveis'
+      }}</strong>
+    </div>
+  </section>
+}

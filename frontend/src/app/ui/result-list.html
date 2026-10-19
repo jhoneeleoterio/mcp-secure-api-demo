@@ -1,0 +1,4 @@
+@if (showCount) {
+  <p class="count" role="status">{{ count }} {{ count === 1 ? singular : plural }}</p>
+}
+<div class="items" [class.rows]="variant === 'rows'"><ng-content /></div>

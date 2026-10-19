@@ -1,0 +1,69 @@
+<section class="page-heading">
+  <p class="eyebrow">Consulta de registros</p>
+  <h1>Pedidos</h1>
+  <p>Consulte o status, os itens e o total pelo número do pedido.</p>
+</section>
+<app-search-field
+  fieldId="order-id"
+  label="Número do pedido"
+  placeholder="Ex.: 1002"
+  buttonLabel="Consultar"
+  inputMode="numeric"
+  [(value)]="idInput"
+  [error]="validationError()"
+  (searched)="submit()"
+/>
+
+@if (state.loading()) {
+  <app-feedback kind="loading" message="Carregando pedido…" />
+} @else if (state.error()) {
+  <app-feedback
+    kind="error"
+    [message]="state.error()!"
+    [retry]="state.canRetry()"
+    (retryClick)="load(+idInput)"
+  />
+} @else if (state.data(); as order) {
+  <section class="order-card" aria-label="Detalhes do pedido">
+    <div class="order-top">
+      <div>
+        <p class="eyebrow">Pedido #{{ order.id }}</p>
+        <h2>Detalhes do pedido</h2>
+      </div>
+      <span class="status">{{ statusLabel(order.status) }}</span>
+    </div>
+    <dl class="metadata">
+      <div>
+        <dt>Cliente</dt>
+        <dd>#{{ order.customerId }}</dd>
+      </div>
+      <div>
+        <dt>Moeda</dt>
+        <dd>{{ order.currency }}</dd>
+      </div>
+      <div>
+        <dt>Itens</dt>
+        <dd>{{ order.items.length }}</dd>
+      </div>
+    </dl>
+    <h3>Itens do pedido</h3>
+    <app-result-list [count]="order.items.length" [showCount]="false" variant="rows">
+      @for (item of order.items; track item.sku) {
+        <div class="item-row">
+          <div>
+            <a class="text-link" [routerLink]="['/inventory', item.sku]">{{ item.sku }} →</a>
+            <p>{{ item.quantity }} {{ item.quantity === 1 ? 'unidade' : 'unidades' }}</p>
+          </div>
+          <strong
+            >{{ item.unitPrice | currency: order.currency : 'symbol' : '1.2-2' : 'pt-BR' }} /
+            un.</strong
+          >
+        </div>
+      }
+    </app-result-list>
+    <div class="total-row">
+      <span>Total</span
+      ><strong>{{ order.total | currency: order.currency : 'symbol' : '1.2-2' : 'pt-BR' }}</strong>
+    </div>
+  </section>
+}
