@@ -2,7 +2,7 @@
 
 A small read-only REST API for fictitious customers, orders and inventory, plus an
 MCP host with JWT authentication. The API uses .NET 10, Entity Framework Core and
-PostgreSQL. The MCP host does not have tools yet.
+PostgreSQL. The Angular frontend offers a read-only view of the demo. The MCP host does not have tools yet.
 
 ## Run locally
 
@@ -25,13 +25,18 @@ The database volume is retained; the sample data is loaded only when the volume 
 The API reference is available in ReDoc at `http://localhost:5080/docs`. Its
 OpenAPI document is at `http://localhost:5080/swagger/v1/swagger.json`.
 
+To run the Angular frontend locally, use Node.js 24.15+ (24.x) or 26.x and run
+`npm ci` followed by `npm start` inside `frontend/`. Open
+`http://localhost:4200/app/`; the dev server uses the API at `http://localhost:5080`.
+The production frontend is also served at `/app/`.
+
 ## Deployment
 
 On `main`, GitHub Actions runs the build and smoke tests, then publishes AMD64
-API and MCP images to GHCR. An Oracle Cloud VM checks for the latest published
+API, MCP and web images to GHCR. An Oracle Cloud VM checks for the latest published
 release every 10 minutes and deploys it without a GitHub SSH secret. The VM runs
 the API, MCP host and Caddy; Neon hosts the database. Caddy serves HTTPS, with
-REST routes at the site root and protected MCP at `/mcp`. See the
+the frontend at `/app/`, REST routes at the site root and protected MCP at `/mcp`. See the
 [deployment overview](docs/deployment.md).
 
 ## Endpoints

@@ -1,0 +1,28 @@
+<a class="skip-link" href="#main">Ir para o conteúdo</a>
+<header class="site-header">
+  <div class="container header-inner">
+    <a class="brand" routerLink="/" aria-label="AcmeCommerce, início">AcmeCommerce <span>Demo</span></a>
+    <nav aria-label="Navegação principal">
+      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">Início</a>
+      <a routerLink="/customers" routerLinkActive="active">Clientes</a>
+      <a routerLink="/orders" routerLinkActive="active">Pedidos</a>
+      <a routerLink="/inventory" routerLinkActive="active">Estoque</a>
+    </nav>
+  </div>
+</header>
+<main id="main" class="container main-content"><router-outlet /></main>
+<footer class="site-footer">
+  <div class="container footer-inner">
+    <span>Dados fictícios · Consultas somente leitura</span>
+    <div class="footer-links">
+      <span class="availability" [class.offline]="availability() === 'unavailable'" role="status">
+        @switch (availability()) {
+          @case ('ready') { API disponível }
+          @case ('unavailable') { API indisponível }
+          @default { Verificando API… }
+        }
+      </span>
+      <a href="/docs">Documentação da API</a>
+    </div>
+  </div>
+</footer>

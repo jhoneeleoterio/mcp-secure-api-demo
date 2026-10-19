@@ -26,7 +26,7 @@ services:
     restart: unless-stopped
 
   caddy:
-    image: caddy:2-alpine
+    image: ghcr.io/jhoneeleoterio/mcp-secure-api-demo-web:${IMAGE_TAG:?Set IMAGE_TAG}
     environment:
       PUBLIC_HOST: ${PUBLIC_HOST:?Set PUBLIC_HOST}
     ports:

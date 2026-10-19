@@ -46,6 +46,12 @@ if run_compose "$release" "$tag" pull &&
    curl --fail --silent --show-error --connect-timeout 10 --max-time 20 \
      --retry 12 --retry-delay 5 --retry-all-errors \
      "https://$public_host/health/ready" >/dev/null &&
+   curl --fail --silent --show-error --connect-timeout 10 --max-time 20 \
+     "https://$public_host/app/" | grep '<app-root' >/dev/null &&
+   curl --fail --silent --show-error --connect-timeout 10 --max-time 20 \
+     "https://$public_host/app/orders/1002" | grep '<app-root' >/dev/null &&
+   curl --fail --silent --show-error --connect-timeout 10 --max-time 20 \
+     "https://$public_host/docs" >/dev/null &&
    [[ $(curl --silent --show-error --connect-timeout 10 --max-time 20 \
      --output /dev/null --write-out '%{http_code}' \
      -X POST -H 'Content-Type: application/json' \
