@@ -1,7 +1,8 @@
 # Deploy
 
-O GitHub Actions executa o build e os testes da branch `main` e publica as
-imagens da API, do MCP e do frontend no GitHub Container Registry (GHCR).
+O GitHub Actions executa o build e os testes da branch `main`. Publica as
+imagens da API e do MCP quando o backend muda, e a imagem do frontend quando
+o frontend muda. O deploy usa a tag do commit da última publicação de cada imagem.
 
 Uma VM Oracle verifica periodicamente se existe uma nova versão em `main` com
 build, testes e publicação concluídos. Então ela baixa as imagens e inicia a

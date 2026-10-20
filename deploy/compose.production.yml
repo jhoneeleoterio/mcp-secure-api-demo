@@ -2,7 +2,7 @@ name: acmecommerce
 
 services:
   api:
-    image: ghcr.io/jhoneeleoterio/mcp-secure-api-demo-api:${IMAGE_TAG:?Set IMAGE_TAG}
+    image: ghcr.io/jhoneeleoterio/mcp-secure-api-demo-api:${BACKEND_IMAGE_TAG:?Set BACKEND_IMAGE_TAG}
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_HTTP_PORTS: 8080
@@ -13,7 +13,7 @@ services:
     restart: unless-stopped
 
   mcp:
-    image: ghcr.io/jhoneeleoterio/mcp-secure-api-demo-mcp:${IMAGE_TAG:?Set IMAGE_TAG}
+    image: ghcr.io/jhoneeleoterio/mcp-secure-api-demo-mcp:${BACKEND_IMAGE_TAG:?Set BACKEND_IMAGE_TAG}
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_HTTP_PORTS: 8080
@@ -26,14 +26,13 @@ services:
     restart: unless-stopped
 
   caddy:
-    image: ghcr.io/jhoneeleoterio/mcp-secure-api-demo-web:${IMAGE_TAG:?Set IMAGE_TAG}
+    image: ghcr.io/jhoneeleoterio/mcp-secure-api-demo-web:${WEB_IMAGE_TAG:?Set WEB_IMAGE_TAG}
     environment:
       PUBLIC_HOST: ${PUBLIC_HOST:?Set PUBLIC_HOST}
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy-data:/data
       - caddy-config:/config
     depends_on:
