@@ -3,6 +3,28 @@ on: [push, pull_request]
 permissions:
   contents: read
 jobs:
+  changes:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.images.outputs.backend }}
+      web: ${{ steps.images.outputs.web }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Select images affected by this push
+        id: images
+        env:
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+        run: |
+          if [[ $BEFORE =~ ^0+$ ]]; then
+            printf 'backend=true\nweb=true\n' >> "$GITHUB_OUTPUT"
+          else
+            git diff --name-only -z "$BEFORE" "$AFTER" | python3 deploy/image_versions.py classify >> "$GITHUB_OUTPUT"
+          fi
+
   verify:
     runs-on: ubuntu-latest
     steps:
@@ -12,6 +34,7 @@ jobs:
           dotnet-version: '10.0.x'
       - run: dotnet restore AcmeCommerce.slnx
       - run: dotnet build AcmeCommerce.slnx -c Release --no-restore
+      - run: python3 -m unittest discover -s tests -p 'test_image_versions.py'
       - uses: actions/setup-node@v4
         with:
           node-version: '24.15.0'
@@ -39,9 +62,9 @@ jobs:
         if: always()
         run: docker compose down
 
-  publish:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: verify
+  publish-backend:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.outputs.backend == 'true'
+    needs: [verify, changes]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -68,6 +91,21 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: ghcr.io/jhoneeleoterio/mcp-secure-api-demo-mcp:${{ github.sha }}
+  publish-web:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.outputs.web == 'true'
+    needs: [verify, changes]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       - uses: docker/build-push-action@v6
         with:
           context: .
