@@ -55,7 +55,8 @@ jobs:
           python3 scripts/dev_token.py --init-key
           docker compose up --build -d
       - run: python3 tests/smoke.py
-      - run: ACME_ENV_FILE=.env python3 tests/auth_smoke.py
+      - run: set -o pipefail; ACME_ENV_FILE=.env python3 tests/auth_smoke.py | tee /tmp/mcp-auth-smoke.log
+      - run: python3 tests/trace_smoke.py /tmp/mcp-auth-smoke.log
       - name: Diagnostics
         if: failure()
         run: docker compose logs --no-color

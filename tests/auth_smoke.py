@@ -95,3 +95,50 @@ assert status == 200, f"tools/list: expected 200, got {status}: {body[:200]}"
 message = response_json(body)
 assert message.get("id") == 2 and message.get("result", {}).get("tools") == [], message
 print("PASS: MCP JWT authentication and empty tool list")
+
+scoped = create_token(key, issuer, audience, scopes=[
+    "customers.read", "orders.read", "inventory.read",
+])
+status, body = post(list_request, scoped)
+assert status == 200
+tools = response_json(body)["result"]["tools"]
+assert {tool["name"] for tool in tools} == {
+    "search_customer", "get_order", "check_inventory",
+}
+
+
+def call(name, arguments, token):
+    payload = json.dumps({
+        "jsonrpc": "2.0", "id": 3, "method": "tools/call",
+        "params": {"name": name, "arguments": arguments},
+    }).encode()
+    status, body = post(payload, token)
+    assert status == 200, (name, status, body[:200])
+    return response_json(body)
+
+
+denied = call("get_order", {"orderId": 1002}, create_token(
+    key, issuer, audience, scopes=["customers.read"],
+))
+assert denied.get("error") or denied.get("result", {}).get("isError"), denied
+
+customer = call("search_customer", {"query": "Alice"}, scoped)["result"]["structuredContent"]
+assert customer["status"] == "ok" and customer["data"][0]["latestOrderId"] == 1002
+order = call("get_order", {"orderId": 1002}, scoped)["result"]["structuredContent"]
+assert order["status"] == "ok" and order["data"]["total"] == 300
+inventory = call("check_inventory", {"sku": "ABC-123"}, scoped)["result"]["structuredContent"]
+assert inventory["status"] == "ok" and inventory["data"]["availableQuantity"] == 12
+assert inventory["traceId"]
+print("TRACE_ID=" + inventory["traceId"])
+assert call("get_order", {"orderId": 9999}, scoped)["result"]["structuredContent"]["status"] == "not_found"
+assert call("check_inventory", {"sku": "bad/sku"}, scoped)["result"]["structuredContent"]["status"] == "invalid_input"
+durations = []
+for _ in range(20):
+    started = time.perf_counter()
+    result = call("check_inventory", {"sku": "ABC-123"}, scoped)
+    assert result["result"]["structuredContent"]["status"] == "ok"
+    durations.append(time.perf_counter() - started)
+p95 = sorted(durations)[18]
+print(f"MCP inventory P95: {p95 * 1000:.1f} ms (20 local samples)")
+assert p95 < 1.0, f"MCP inventory P95 exceeded 1 second: {p95:.3f}s"
+print("PASS: scoped MCP tools, REST results, denial and controlled errors")
