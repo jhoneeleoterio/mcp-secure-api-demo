@@ -5,9 +5,11 @@ using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
 using AcmeCommerce.Mcp.Configuration;
+using AcmeCommerce.Mcp.Tools;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -97,7 +99,7 @@ public sealed class ToolAuthorizationTests
     }
 
     [Fact]
-    public async Task Production_host_still_advertises_no_tools()
+    public async Task Production_host_exposes_only_scoped_tools_and_calls_api()
     {
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseUrls("http://127.0.0.1:0");
@@ -105,7 +107,11 @@ public sealed class ToolAuthorizationTests
         foreach (var setting in TestConfiguration().AsEnumerable())
             builder.Configuration[setting.Key] = setting.Value;
         builder.Services.AddJwtAuthenticationAndAuthorization(builder.Configuration);
-        builder.Services.AddMcpHost();
+        builder.Services.AddMcpTelemetry();
+        builder.Services.AddMcpHost(builder.Configuration);
+        builder.Services.AddSingleton<SpyHttpHandler>();
+        builder.Services.AddHttpClient<CommerceApiClient>()
+            .ConfigurePrimaryHttpMessageHandler(provider => provider.GetRequiredService<SpyHttpHandler>());
 
         await using var app = builder.Build();
         app.UseJwtAuthenticationAndAuthorization();
@@ -113,8 +119,79 @@ public sealed class ToolAuthorizationTests
         await app.StartAsync();
 
         using var client = new HttpClient { BaseAddress = new Uri(app.Urls.Single()) };
-        using var list = await McpResponse(await Post(client, ListRequest(), Token("customers.read")));
-        Assert.Empty(list.RootElement.GetProperty("result").GetProperty("tools").EnumerateArray());
+        var spy = app.Services.GetRequiredService<SpyHttpHandler>();
+        using (var list = await McpResponse(await Post(client, ListRequest(), Token("customers.read"))))
+            Assert.Equal("search_customer", Assert.Single(list.RootElement.GetProperty("result").GetProperty("tools").EnumerateArray()).GetProperty("name").GetString());
+        using (var list = await McpResponse(await Post(client, ListRequest(), Token("orders.read inventory.read"))))
+            Assert.Equal(2, list.RootElement.GetProperty("result").GetProperty("tools").GetArrayLength());
+
+        await AssertDenied(await Post(client, CallRequest("get_order", new { orderId = 1002 }), Token("customers.read")));
+        Assert.Equal(0, spy.Calls);
+
+        using (var result = await McpResponse(await Post(client, CallRequest("search_customer", new { query = "Alice" }), Token("customers.read"))))
+            Assert.Equal("ok", result.RootElement.GetProperty("result").GetProperty("structuredContent").GetProperty("status").GetString());
+        using (var result = await McpResponse(await Post(client, CallRequest("get_order", new { orderId = 1002 }), Token("orders.read"))))
+            Assert.Equal(1002, result.RootElement.GetProperty("result").GetProperty("structuredContent").GetProperty("data").GetProperty("id").GetInt32());
+        using (var result = await McpResponse(await Post(client, CallRequest("check_inventory", new { sku = "ABC-123" }), Token("inventory.read"))))
+            Assert.Equal(12, result.RootElement.GetProperty("result").GetProperty("structuredContent").GetProperty("data").GetProperty("availableQuantity").GetInt32());
+        Assert.Equal(3, spy.Calls);
+
+        using (var result = await McpResponse(await Post(client, CallRequest("check_inventory", new { sku = "bad/sku" }), Token("inventory.read"))))
+            Assert.Equal("invalid_input", result.RootElement.GetProperty("result").GetProperty("structuredContent").GetProperty("status").GetString());
+        using (var result = await McpResponse(await Post(client, CallRequest("check_inventory", new { sku = "ABC-123\n" }), Token("inventory.read"))))
+            Assert.Equal("invalid_input", result.RootElement.GetProperty("result").GetProperty("structuredContent").GetProperty("status").GetString());
+        Assert.Equal(3, spy.Calls);
+
+        using (var result = await McpResponse(await Post(client, CallRequest("get_order", new { orderId = 9999 }), Token("orders.read"))))
+            Assert.Equal("not_found", result.RootElement.GetProperty("result").GetProperty("structuredContent").GetProperty("status").GetString());
+        using (var result = await McpResponse(await Post(client, CallRequest("check_inventory", new { sku = "TIMEOUT" }), Token("inventory.read"))))
+            Assert.Equal("unavailable", result.RootElement.GetProperty("result").GetProperty("structuredContent").GetProperty("status").GetString());
+        using (var result = await McpResponse(await Post(client, CallRequest("check_inventory", new { sku = "FAIL" }), Token("inventory.read"))))
+            Assert.Equal("unavailable", result.RootElement.GetProperty("result").GetProperty("structuredContent").GetProperty("status").GetString());
+        using (var result = await McpResponse(await Post(client, CallRequest("check_inventory", new { sku = "REDIRECT" }), Token("inventory.read"))))
+            Assert.Equal("unavailable", result.RootElement.GetProperty("result").GetProperty("structuredContent").GetProperty("status").GetString());
+        Assert.Equal(7, spy.Calls);
+    }
+
+    [Fact]
+    public async Task HttpClient_propagates_trace_to_real_api_without_manual_header()
+    {
+        var receivedTrace = new TaskCompletionSource<string?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var apiBuilder = WebApplication.CreateBuilder();
+        apiBuilder.WebHost.UseUrls("http://127.0.0.1:0");
+        apiBuilder.Logging.ClearProviders();
+        await using var api = apiBuilder.Build();
+        api.MapGet("/inventory/ABC-123", (HttpContext context) =>
+        {
+            receivedTrace.TrySetResult(context.Request.Headers["traceparent"].ToString());
+            return Results.Json(new { sku = "ABC-123", productName = "Sample", availableQuantity = 12 });
+        });
+        await api.StartAsync();
+
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseUrls("http://127.0.0.1:0");
+        builder.Logging.ClearProviders();
+        foreach (var setting in TestConfiguration().AsEnumerable())
+            builder.Configuration[setting.Key] = setting.Value;
+        builder.Configuration["Api:BaseUrl"] = api.Urls.Single() + "/";
+        builder.Services.AddJwtAuthenticationAndAuthorization(builder.Configuration);
+        builder.Services.AddMcpTelemetry();
+        builder.Services.AddMcpHost(builder.Configuration);
+
+        await using var mcp = builder.Build();
+        mcp.UseJwtAuthenticationAndAuthorization();
+        mcp.MapMcpHost();
+        await mcp.StartAsync();
+
+        using var client = new HttpClient { BaseAddress = new Uri(mcp.Urls.Single()) };
+        using var result = await McpResponse(await Post(client,
+            CallRequest("check_inventory", new { sku = "ABC-123" }), Token("inventory.read")));
+        var toolTraceId = result.RootElement.GetProperty("result").GetProperty("structuredContent")
+            .GetProperty("traceId").GetString();
+        var traceparent = await receivedTrace.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.NotNull(traceparent);
+        Assert.Equal(toolTraceId, traceparent.Split('-')[1]);
     }
 
     private static IConfiguration TestConfiguration() => new ConfigurationBuilder()
@@ -154,9 +231,9 @@ public sealed class ToolAuthorizationTests
     };
 
     private static object ListRequest() => new { jsonrpc = "2.0", id = 2, method = "tools/list" };
-    private static object CallRequest() => new
+    private static object CallRequest(string name = "probe", object? arguments = null) => new
     {
-        jsonrpc = "2.0", id = 3, method = "tools/call", @params = new { name = "probe", arguments = new { } }
+        jsonrpc = "2.0", id = 3, method = "tools/call", @params = new { name, arguments = arguments ?? new { } }
     };
 
     private static async Task<HttpResponseMessage> Post(HttpClient client, object payload, string? token)
@@ -214,9 +291,28 @@ public sealed class ToolAuthorizationTests
             HttpRequestMessage request, CancellationToken cancellationToken)
         {
             Calls++;
+            var path = request.RequestUri?.AbsolutePath;
+            if (path == "/orders/9999")
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound));
+            if (path == "/inventory/TIMEOUT")
+                return Task.FromCanceled<HttpResponseMessage>(new CancellationToken(true));
+            if (path == "/inventory/FAIL")
+                throw new HttpRequestException("private downstream details");
+            if (path == "/inventory/REDIRECT")
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.Redirect)
+                {
+                    Headers = { Location = new Uri("http://169.254.169.254/latest/meta-data/") }
+                });
+            var content = path switch
+            {
+                "/customers" => "[{\"id\":1,\"name\":\"Alice\",\"email\":\"alice@example.test\",\"latestOrderId\":1002}]",
+                "/orders/1002" => "{\"id\":1002,\"customerId\":1,\"status\":\"paid\",\"currency\":\"BRL\",\"items\":[{\"sku\":\"ABC-123\",\"quantity\":1,\"unitPrice\":300}]}",
+                "/inventory/ABC-123" => "{\"sku\":\"ABC-123\",\"productName\":\"Sample\",\"availableQuantity\":12}",
+                _ => "downstream-ok"
+            };
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
             {
-                Content = new StringContent("downstream-ok")
+                Content = new StringContent(content, Encoding.UTF8, "application/json")
             });
         }
     }

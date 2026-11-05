@@ -1,14 +1,24 @@
 using ModelContextProtocol.AspNetCore;
-using ModelContextProtocol.Protocol;
+using AcmeCommerce.Mcp.Tools;
 
 namespace AcmeCommerce.Mcp.Configuration;
 
 public static class McpConfiguration
 {
-    public static IServiceCollection AddMcpHost(this IServiceCollection services)
+    public static IServiceCollection AddMcpHost(this IServiceCollection services, IConfiguration configuration)
     {
+        var apiBaseUrl = configuration["Api:BaseUrl"] ?? "http://api:8080/";
+        if (!Uri.TryCreate(apiBaseUrl, UriKind.Absolute, out var apiUri)
+            || (apiUri.Scheme != Uri.UriSchemeHttp && apiUri.Scheme != Uri.UriSchemeHttps)
+            || !apiUri.AbsolutePath.EndsWith('/'))
+            throw new InvalidOperationException("Api:BaseUrl must be an absolute HTTP URL ending in '/'.");
+        services.AddHttpClient<CommerceApiClient>(client =>
+        {
+            client.BaseAddress = apiUri;
+            client.Timeout = TimeSpan.FromSeconds(5);
+        }).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
         services.AddMcpServer().WithHttpTransport().AddAuthorizationFilters()
-            .WithListToolsHandler((_, _) => ValueTask.FromResult(new ListToolsResult { Tools = [] }));
+            .WithTools<CommerceTools>();
         return services;
     }
 
