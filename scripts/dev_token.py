@@ -46,18 +46,21 @@ def encode_part(value):
     return base64.urlsafe_b64encode(data).rstrip(b"=").decode()
 
 
-def create_token(key, issuer, audience, subject="demo-user", issued_at=None, expires_at=None):
+def create_token(key, issuer, audience, subject="demo-user", issued_at=None, expires_at=None, scopes=()):
     now = int(time.time()) if issued_at is None else issued_at
     expiry = now + 3600 if expires_at is None else expires_at
     header = encode_part({"alg": "HS256", "typ": "JWT"})
-    payload = encode_part({
+    payload_values = {
         "iss": issuer,
         "aud": audience,
         "sub": subject,
         "iat": now,
         "nbf": now,
         "exp": expiry,
-    })
+    }
+    if scopes:
+        payload_values["scope"] = " ".join(scopes)
+    payload = encode_part(payload_values)
     message = f"{header}.{payload}".encode()
     signature = base64.urlsafe_b64encode(hmac.new(key, message, hashlib.sha256).digest())
     return f"{header}.{payload}.{signature.rstrip(b'=').decode()}"
@@ -67,6 +70,9 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--init-key", action="store_true", help="add a random key to .env")
     parser.add_argument("--subject", default="demo-user", help="token subject")
+    parser.add_argument("--scope", action="append", default=[],
+                        choices=("customers.read", "orders.read", "inventory.read"),
+                        help="add one tool scope; repeat to grant more")
     args = parser.parse_args()
     values = read_env()
 
@@ -91,6 +97,7 @@ def main():
         setting("JWT_ISSUER", values),
         setting("JWT_AUDIENCE", values),
         subject=args.subject.strip(),
+        scopes=list(dict.fromkeys(args.scope)),
     ))
 
 

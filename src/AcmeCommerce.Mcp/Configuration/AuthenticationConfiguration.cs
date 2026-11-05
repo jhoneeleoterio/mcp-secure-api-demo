@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Tokens;
 
 namespace AcmeCommerce.Mcp.Configuration;
@@ -17,6 +18,7 @@ public static class AuthenticationConfiguration
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
             {
+                options.MapInboundClaims = false;
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateIssuer = true,
@@ -33,7 +35,15 @@ public static class AuthenticationConfiguration
                     NameClaimType = "sub"
                 };
             });
-        services.AddAuthorization();
+        services.AddSingleton<IAuthorizationHandler, ToolScopeHandler>();
+        services.AddAuthorization(options =>
+        {
+            foreach (var scope in ToolScopes.All)
+            {
+                options.AddPolicy(scope, policy => policy.RequireAuthenticatedUser()
+                    .AddRequirements(new ToolScopeRequirement(scope)));
+            }
+        });
         return services;
     }
 

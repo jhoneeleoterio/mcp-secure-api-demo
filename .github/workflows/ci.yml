@@ -34,7 +34,8 @@ jobs:
           dotnet-version: '10.0.x'
       - run: dotnet restore AcmeCommerce.slnx
       - run: dotnet build AcmeCommerce.slnx -c Release --no-restore
-      - run: python3 -m unittest discover -s tests -p 'test_image_versions.py'
+      - run: dotnet test AcmeCommerce.slnx -c Release --no-build --no-restore
+      - run: python3 -m unittest discover -s tests -p 'test_*.py'
       - uses: actions/setup-node@v4
         with:
           node-version: '24.15.0'

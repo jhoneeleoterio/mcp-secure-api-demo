@@ -1,8 +1,8 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
-COPY Directory.Build.props AcmeCommerce.slnx ./
+COPY Directory.Build.props ./
 COPY src/ ./src/
-RUN dotnet restore AcmeCommerce.slnx
+RUN dotnet restore src/AcmeCommerce.Api/AcmeCommerce.Api.csproj
 RUN dotnet publish src/AcmeCommerce.Api -c Release --no-restore -o /out
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
