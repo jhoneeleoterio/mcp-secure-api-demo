@@ -1,0 +1,102 @@
+@use '../../styles/theme' as theme;
+
+.example-card {
+  @include theme.panel;
+  padding: 24px;
+}
+.example-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: start;
+}
+.example-heading h2 {
+  margin: 7px 0 6px;
+}
+.example-heading p:not(.eyebrow) {
+  margin: 0;
+  color: theme.color(muted);
+}
+.scope {
+  flex: 0 0 auto;
+  padding: 7px 10px;
+  border-radius: 7px;
+  color: theme.color(primary);
+  background: theme.color(primary-soft);
+  font-size: 0.8rem;
+}
+.example-controls {
+  display: grid;
+  gap: 8px;
+  margin: 22px 0;
+}
+.example-controls label {
+  font-weight: 700;
+}
+.action-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.action-row input {
+  min-width: 0;
+  flex: 1;
+  padding: 11px 12px;
+  border: 1px solid theme.color(line);
+  border-radius: 8px;
+}
+.exchange {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.exchange > div {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid theme.color(line);
+  border-radius: 8px;
+  background: theme.color(canvas);
+}
+.exchange h3 {
+  margin: 0 0 10px;
+}
+pre {
+  overflow: auto;
+  margin: 0;
+  padding: 12px;
+  border-radius: 6px;
+  color: theme.color(ink);
+  background: #fff;
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+.state {
+  margin: 0 0 10px;
+  color: theme.color(muted);
+}
+.state.error {
+  color: theme.color(danger);
+}
+.state.empty {
+  color: theme.color(warning);
+}
+small {
+  display: block;
+  margin-top: 10px;
+  color: theme.color(muted);
+  overflow-wrap: anywhere;
+}
+@media (max-width: 820px) {
+  .exchange {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 580px) {
+  .example-heading, .action-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .scope {
+    align-self: start;
+  }
+}

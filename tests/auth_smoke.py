@@ -27,7 +27,7 @@ MCP_REQUEST = json.dumps({
 }).encode()
 
 
-def post(payload, token=None):
+def post(payload, token=None, path="/mcp"):
     headers = {
         "Content-Type": "application/json",
         "Accept": "application/json, text/event-stream",
@@ -35,7 +35,7 @@ def post(payload, token=None):
     }
     if token is not None:
         headers["Authorization"] = f"Bearer {token}"
-    request = urllib.request.Request(BASE + "/mcp", payload, headers=headers, method="POST")
+    request = urllib.request.Request(BASE + path, payload, headers=headers, method="POST")
     try:
         with urllib.request.urlopen(request, timeout=7) as response:
             return response.status, response.read().decode()
@@ -132,6 +132,15 @@ assert inventory["traceId"]
 print("TRACE_ID=" + inventory["traceId"])
 assert call("get_order", {"orderId": 9999}, scoped)["result"]["structuredContent"]["status"] == "not_found"
 assert call("check_inventory", {"sku": "bad/sku"}, scoped)["result"]["structuredContent"]["status"] == "invalid_input"
+
+demo_status, demo_body = post(b"{}", path="/mcp/demo-token")
+assert demo_status == 200, f"demo token endpoint returned {demo_status}"
+demo_token = json.loads(demo_body)["accessToken"]
+assert call("check_inventory", {"sku": "ABC-123"}, demo_token)["result"]["structuredContent"]["status"] == "ok"
+oversized_request = json.dumps({"jsonrpc": "2.0", "id": 4, "method": "tools/list", "padding": "x" * 17000}).encode()
+oversized_status, _ = post(oversized_request, demo_token)
+assert oversized_status == 413, f"oversized MCP request: expected 413, got {oversized_status}"
+
 durations = []
 for _ in range(20):
     started = time.perf_counter()

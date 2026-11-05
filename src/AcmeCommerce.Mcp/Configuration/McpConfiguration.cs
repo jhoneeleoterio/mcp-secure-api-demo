@@ -1,5 +1,6 @@
 using ModelContextProtocol.AspNetCore;
 using AcmeCommerce.Mcp.Tools;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace AcmeCommerce.Mcp.Configuration;
 
@@ -24,7 +25,7 @@ public static class McpConfiguration
 
     public static WebApplication MapMcpHost(this WebApplication app)
     {
-        app.MapMcp("/mcp").RequireAuthorization();
+        app.MapMcp("/mcp").RequireAuthorization().RequireRateLimiting("mcp-calls");
         return app;
     }
 }

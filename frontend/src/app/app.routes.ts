@@ -3,6 +3,7 @@ import { HomePage } from './pages/home';
 import { CustomersPage } from './pages/customers';
 import { OrdersPage } from './pages/orders';
 import { InventoryPage } from './pages/inventory';
+import { McpPage } from './pages/mcp';
 
 export const routes: Routes = [
   { path: '', component: HomePage, title: 'Início | AcmeCommerce' },
@@ -11,5 +12,6 @@ export const routes: Routes = [
   { path: 'orders/:id', component: OrdersPage, title: 'Pedido | AcmeCommerce' },
   { path: 'inventory', component: InventoryPage, title: 'Estoque | AcmeCommerce' },
   { path: 'inventory/:sku', component: InventoryPage, title: 'Produto | AcmeCommerce' },
+  { path: 'mcp', component: McpPage, title: 'MCP | AcmeCommerce' },
   { path: '**', redirectTo: '' },
 ];

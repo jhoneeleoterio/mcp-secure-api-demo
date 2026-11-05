@@ -1,0 +1,67 @@
+@use '../../styles/theme' as theme;
+
+.token-panel {
+  @include theme.panel;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 1.2fr);
+  gap: 26px;
+  padding: 24px;
+  margin-bottom: 28px;
+}
+.token-panel h2 {
+  margin: 7px 0 8px;
+}
+.token-panel p:not(.eyebrow) {
+  color: theme.color(muted);
+  margin: 0;
+}
+.token-controls {
+  display: grid;
+  align-content: center;
+  gap: 8px;
+}
+.token-controls label {
+  font-weight: 700;
+}
+.token-input-row {
+  display: flex;
+  gap: 8px;
+}
+.token-input-row input {
+  min-width: 0;
+  flex: 1;
+  padding: 11px 12px;
+  border: 1px solid theme.color(line);
+  border-radius: 8px;
+}
+.token-input-row button {
+  padding: 0 15px;
+  border: 1px solid theme.color(line);
+  border-radius: 8px;
+  background: #fff;
+  color: theme.color(primary);
+  font-weight: 700;
+  cursor: pointer;
+}
+.token-input-row button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.token-controls small {
+  color: theme.color(muted);
+}
+.token-error, .token-success {
+  margin: 0;
+  font-size: 0.875rem;
+}
+.token-error { color: theme.color(danger); }
+.token-success { color: theme.color(success); }
+.examples {
+  display: grid;
+  gap: 20px;
+}
+@media (max-width: 760px) {
+  .token-panel {
+    grid-template-columns: 1fr;
+  }
+}

@@ -194,6 +194,72 @@ public sealed class ToolAuthorizationTests
         Assert.Equal(toolTraceId, traceparent.Split('-')[1]);
     }
 
+    [Fact]
+    public async Task Public_demo_issues_short_lived_read_only_token_with_rate_limit()
+    {
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseUrls("http://127.0.0.1:0");
+        builder.Logging.ClearProviders();
+        foreach (var setting in TestConfiguration().AsEnumerable())
+            builder.Configuration[setting.Key] = setting.Value;
+        builder.Configuration["McpDemoTokens:Enabled"] = "true";
+        builder.Configuration["McpDemoTokens:TrustProxyClientIp"] = "true";
+        builder.Services.AddJwtAuthenticationAndAuthorization(builder.Configuration);
+        builder.Services.AddMcpDemoTokens(builder.Configuration);
+        builder.Services.AddMcpHost(builder.Configuration);
+
+        await using var app = builder.Build();
+        app.UseRouting();
+        app.UseJwtAuthenticationAndAuthorization();
+        app.UseMcpDemoOriginCheck();
+        app.UseRateLimiter();
+        app.MapMcpDemoTokens();
+        app.MapMcpHost();
+        await app.StartAsync();
+
+        using var client = new HttpClient { BaseAddress = new Uri(app.Urls.Single()) };
+        client.DefaultRequestHeaders.Add("X-Demo-Client-IP", "203.0.113.10");
+        using (var crossSite = new HttpRequestMessage(HttpMethod.Post, "/mcp/demo-token"))
+        {
+            crossSite.Headers.Add("Origin", "https://attacker.example");
+            using var denied = await client.SendAsync(crossSite);
+            Assert.Equal(HttpStatusCode.Forbidden, denied.StatusCode);
+        }
+        using var issued = await client.PostAsync("/mcp/demo-token", null);
+        Assert.Equal(HttpStatusCode.OK, issued.StatusCode);
+        Assert.Contains("no-store", issued.Headers.CacheControl?.ToString());
+        using var body = JsonDocument.Parse(await issued.Content.ReadAsStringAsync());
+        var token = body.RootElement.GetProperty("accessToken").GetString();
+        Assert.NotNull(token);
+        var jwt = new JwtSecurityTokenHandler().ReadJwtToken(token);
+        Assert.Equal("public-demo", jwt.Claims.Single(claim => claim.Type == "sub").Value);
+        Assert.Equal("customers.read orders.read inventory.read", jwt.Claims.Single(claim => claim.Type == "scope").Value);
+        Assert.InRange(jwt.ValidTo - DateTime.UtcNow, TimeSpan.FromMinutes(4), TimeSpan.FromMinutes(5));
+
+        using (var list = await McpResponse(await Post(client, ListRequest(), token)))
+            Assert.Equal(3, list.RootElement.GetProperty("result").GetProperty("tools").GetArrayLength());
+
+        for (var request = 1; request < 120; request++)
+        {
+            using var allowed = await Post(client, ListRequest(), token);
+            Assert.Equal(HttpStatusCode.OK, allowed.StatusCode);
+        }
+        using (var limitedCall = await Post(client, ListRequest(), token))
+            Assert.Equal(HttpStatusCode.TooManyRequests, limitedCall.StatusCode);
+
+        for (var request = 1; request < 10; request++)
+        {
+            using var allowed = await client.PostAsync("/mcp/demo-token", null);
+            Assert.Equal(HttpStatusCode.OK, allowed.StatusCode);
+        }
+        using var limited = await client.PostAsync("/mcp/demo-token", null);
+        Assert.Equal(HttpStatusCode.TooManyRequests, limited.StatusCode);
+        client.DefaultRequestHeaders.Remove("X-Demo-Client-IP");
+        client.DefaultRequestHeaders.Add("X-Demo-Client-IP", "203.0.113.11");
+        using var differentVisitor = await client.PostAsync("/mcp/demo-token", null);
+        Assert.Equal(HttpStatusCode.OK, differentVisitor.StatusCode);
+    }
+
     private static IConfiguration TestConfiguration() => new ConfigurationBuilder()
         .AddInMemoryCollection(new Dictionary<string, string?>
         {
