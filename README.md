@@ -19,6 +19,8 @@ python3 tests/auth_smoke.py
 The API is available at `http://localhost:5080`; the protected MCP endpoint is at
 `http://localhost:5081/mcp`. Generate a one-hour test token with
 `python3 scripts/dev_token.py`. Both services bind to the local host only.
+For scope tests, add `--scope customers.read`, `--scope orders.read`, or
+`--scope inventory.read` (repeat the option to combine scopes).
 Stop them with `docker compose down`.
 The database volume is retained; the sample data is loaded only when the volume is empty.
 
@@ -55,7 +57,7 @@ The sample data includes Alice's order `1002` (BRL 300) and 12 available units o
 ## Current limits
 
 The REST API has no authentication and uses only the supplied fictitious data.
-The MCP host requires a JWT for every protocol request, but has
-no tools or per-tool scope checks yet. Its local token flow is not an OAuth login
+The MCP host requires a JWT for every protocol request and defines per-tool
+scope policies, but has no tools yet. Its local token flow is not an OAuth login
 flow for remote MCP clients. The database is initialized with a SQL script, not
 EF Core migrations. This repository has no open-source license.
