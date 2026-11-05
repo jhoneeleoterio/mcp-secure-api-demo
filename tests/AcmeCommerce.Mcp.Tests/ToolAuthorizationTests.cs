@@ -9,6 +9,7 @@ using AcmeCommerce.Mcp.Tools;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -140,7 +141,6 @@ public sealed class ToolAuthorizationTests
         using (var result = await McpResponse(await Post(client, CallRequest("check_inventory", new { sku = "ABC-123\n" }), Token("inventory.read"))))
             Assert.Equal("invalid_input", result.RootElement.GetProperty("result").GetProperty("structuredContent").GetProperty("status").GetString());
         Assert.Equal(3, spy.Calls);
-        Assert.False(string.IsNullOrWhiteSpace(spy.LastTraceParent));
 
         using (var result = await McpResponse(await Post(client, CallRequest("get_order", new { orderId = 9999 }), Token("orders.read"))))
             Assert.Equal("not_found", result.RootElement.GetProperty("result").GetProperty("structuredContent").GetProperty("status").GetString());
@@ -151,6 +151,47 @@ public sealed class ToolAuthorizationTests
         using (var result = await McpResponse(await Post(client, CallRequest("check_inventory", new { sku = "REDIRECT" }), Token("inventory.read"))))
             Assert.Equal("unavailable", result.RootElement.GetProperty("result").GetProperty("structuredContent").GetProperty("status").GetString());
         Assert.Equal(7, spy.Calls);
+    }
+
+    [Fact]
+    public async Task HttpClient_propagates_trace_to_real_api_without_manual_header()
+    {
+        var receivedTrace = new TaskCompletionSource<string?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var apiBuilder = WebApplication.CreateBuilder();
+        apiBuilder.WebHost.UseUrls("http://127.0.0.1:0");
+        apiBuilder.Logging.ClearProviders();
+        await using var api = apiBuilder.Build();
+        api.MapGet("/inventory/ABC-123", (HttpContext context) =>
+        {
+            receivedTrace.TrySetResult(context.Request.Headers["traceparent"].ToString());
+            return Results.Json(new { sku = "ABC-123", productName = "Sample", availableQuantity = 12 });
+        });
+        await api.StartAsync();
+
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseUrls("http://127.0.0.1:0");
+        builder.Logging.ClearProviders();
+        foreach (var setting in TestConfiguration().AsEnumerable())
+            builder.Configuration[setting.Key] = setting.Value;
+        builder.Configuration["Api:BaseUrl"] = api.Urls.Single() + "/";
+        builder.Services.AddJwtAuthenticationAndAuthorization(builder.Configuration);
+        builder.Services.AddMcpTelemetry();
+        builder.Services.AddMcpHost(builder.Configuration);
+
+        await using var mcp = builder.Build();
+        mcp.UseJwtAuthenticationAndAuthorization();
+        mcp.MapMcpHost();
+        await mcp.StartAsync();
+
+        using var client = new HttpClient { BaseAddress = new Uri(mcp.Urls.Single()) };
+        using var result = await McpResponse(await Post(client,
+            CallRequest("check_inventory", new { sku = "ABC-123" }), Token("inventory.read")));
+        var toolTraceId = result.RootElement.GetProperty("result").GetProperty("structuredContent")
+            .GetProperty("traceId").GetString();
+        var traceparent = await receivedTrace.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.NotNull(traceparent);
+        Assert.Equal(toolTraceId, traceparent.Split('-')[1]);
     }
 
     private static IConfiguration TestConfiguration() => new ConfigurationBuilder()
@@ -245,14 +286,11 @@ public sealed class ToolAuthorizationTests
     public sealed class SpyHttpHandler : HttpMessageHandler
     {
         public int Calls { get; private set; }
-        public string? LastTraceParent { get; private set; }
 
         protected override Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request, CancellationToken cancellationToken)
         {
             Calls++;
-            LastTraceParent = request.Headers.TryGetValues("traceparent", out var values)
-                ? values.Single() : null;
             var path = request.RequestUri?.AbsolutePath;
             if (path == "/orders/9999")
                 return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound));

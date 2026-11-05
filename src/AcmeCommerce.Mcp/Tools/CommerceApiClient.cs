@@ -1,6 +1,5 @@
 using System.Net;
 using System.Net.Http.Json;
-using System.Diagnostics;
 using AcmeCommerce.Contracts;
 
 namespace AcmeCommerce.Mcp.Tools;
@@ -19,8 +18,6 @@ public sealed class CommerceApiClient(HttpClient http)
     private async Task<ApiLookup<T>> Get<T>(string path, CancellationToken ct)
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, path);
-        if (Activity.Current is { IdFormat: ActivityIdFormat.W3C } activity)
-            request.Headers.TryAddWithoutValidation("traceparent", activity.Id);
         using var response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
         if (response.StatusCode == HttpStatusCode.NotFound)
             return new ApiLookup<T>(false, default);
