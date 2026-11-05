@@ -1,0 +1,47 @@
+<article class="example-card">
+  <div class="example-heading">
+    <div>
+      <p class="eyebrow">Tool MCP</p>
+      <h2>{{ example.title }}</h2>
+      <p>{{ example.description }}</p>
+    </div>
+    <code class="scope">{{ example.scope }}</code>
+  </div>
+
+  <div class="example-controls">
+    <label [for]="example.name + '-input'">{{ example.inputLabel }}</label>
+    <div class="action-row">
+      <input [id]="example.name + '-input'" [name]="example.name + '-input'" [(ngModel)]="inputValue"
+        [attr.maxlength]="example.name === 'get_order' ? 10 : example.name === 'search_customer' ? 100 : 64"
+        autocomplete="off" spellcheck="false" />
+      <app-button label="Executar tool" [disabled]="loading() || !token" (pressed)="run()" />
+    </div>
+  </div>
+
+  <div class="exchange">
+    <div>
+      <h3>Chamada JSON-RPC</h3>
+      <pre>{{ preview() | json }}</pre>
+    </div>
+    <div aria-live="polite">
+      <h3>Resposta</h3>
+      @if (loading()) {
+        <p class="state">Executando consulta…</p>
+      } @else if (error(); as errorMessage) {
+        <p class="state error" role="alert">{{ errorMessage }}</p>
+      } @else if (result(); as response) {
+        <p class="state" [class.empty]="response.status !== 'ok'">{{ statusLabel(response.status) }}</p>
+        @if (response.data !== null) {
+          <pre>{{ response.data | json }}</pre>
+        } @else {
+          <p class="state">{{ response.status === 'not_found' ? 'Nenhum registro encontrado.' : 'Sem dados para exibir.' }}</p>
+        }
+        @if (response.traceId) {
+          <small>Trace: <code>{{ response.traceId }}</code></small>
+        }
+      } @else {
+        <p class="state">Execute a tool para ver os dados retornados pelo MCP.</p>
+      }
+    </div>
+  </div>
+</article>

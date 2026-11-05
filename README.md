@@ -34,7 +34,10 @@ OpenAPI document is at `http://localhost:5080/swagger/v1/swagger.json`.
 To run the Angular frontend locally, use Node.js 24.15+ (24.x) or 26.x and run
 `npm ci` followed by `npm start` inside `frontend/`. Open
 `http://localhost:4200/app/`; the dev server uses the API at `http://localhost:5080`.
-The production frontend is also served at `/app/`.
+The production frontend is also served at `/app/`. Open `/app/mcp`, activate the
+public demo token, and run the three MCP examples. The token expires after five
+minutes and the app does not persist it. You can also paste a token with narrower
+scopes to test authorization.
 
 ## Deployment
 

@@ -4,5 +4,6 @@
   "/inventory": { "target": "http://localhost:5080", "secure": false },
   "/health": { "target": "http://localhost:5080", "secure": false },
   "/docs": { "target": "http://localhost:5080", "secure": false },
-  "/swagger": { "target": "http://localhost:5080", "secure": false }
+  "/swagger": { "target": "http://localhost:5080", "secure": false },
+  "/mcp": { "target": "http://localhost:5081", "secure": false }
 }

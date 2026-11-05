@@ -1,0 +1,35 @@
+<section class="page-heading">
+  <p class="eyebrow">Protocolo MCP · Somente leitura</p>
+  <h1>Experimente as tools MCP</h1>
+  <p>Execute exemplos reais no servidor MCP e veja a resposta de cada consulta.</p>
+</section>
+
+<section class="token-panel" aria-labelledby="mcp-token-title">
+  <div>
+    <p class="eyebrow">Acesso temporário</p>
+    <h2 id="mcp-token-title">Token JWT</h2>
+    <p>Ative um token público de demonstração, válido por cinco minutos para as três tools de leitura. Ele dá acesso apenas aos dados fictícios do demo.</p>
+  </div>
+  <div class="token-controls">
+    <app-button [label]="demoLoading() ? 'Ativando…' : 'Ativar demonstração'" [disabled]="demoLoading()" (pressed)="activateDemo()" />
+    @if (demoError(); as message) {
+      <p class="token-error" role="alert">{{ message }}</p>
+    }
+    @if (demoExpiresAt()) {
+      <p class="token-success" role="status">Token temporário ativo. Use os exemplos abaixo; se expirar, ative outro.</p>
+    }
+    <label for="mcp-token">Token de acesso</label>
+    <div class="token-input-row">
+      <input id="mcp-token" name="mcp-token" type="password" autocomplete="off" autocapitalize="off"
+        spellcheck="false" placeholder="Ou cole um JWT temporário" [ngModel]="token()" (ngModelChange)="setToken($event)" />
+      <button type="button" (click)="clearToken()" [disabled]="!token()">Limpar</button>
+    </div>
+    <small>O aplicativo não persiste o token; ele é apagado ao recarregar. O token é enviado somente para <code>/mcp</code>. Não cole chaves de assinatura aqui.</small>
+  </div>
+</section>
+
+<section class="examples" aria-label="Exemplos de tools MCP">
+  @for (example of examples; track example.name) {
+    <app-mcp-example-card [example]="example" [token]="token()" />
+  }
+</section>

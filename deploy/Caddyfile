@@ -5,7 +5,9 @@
 
         @mcp path /mcp /mcp/*
         handle @mcp {
-            reverse_proxy mcp:8080
+            reverse_proxy mcp:8080 {
+                header_up X-Demo-Client-IP {remote_host}
+            }
         }
         handle_path /app/* {
             root * /srv/app
