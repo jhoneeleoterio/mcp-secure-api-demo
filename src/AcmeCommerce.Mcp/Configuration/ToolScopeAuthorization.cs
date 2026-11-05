@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
+using System.Diagnostics;
 
 namespace AcmeCommerce.Mcp.Configuration;
 
@@ -13,7 +14,7 @@ public static class ToolScopes
 
 public sealed record ToolScopeRequirement(string Scope) : IAuthorizationRequirement;
 
-public sealed class ToolScopeHandler : AuthorizationHandler<ToolScopeRequirement>
+public sealed class ToolScopeHandler(ILogger<ToolScopeHandler> logger) : AuthorizationHandler<ToolScopeRequirement>
 {
     protected override Task HandleRequirementAsync(
         AuthorizationHandlerContext context, ToolScopeRequirement requirement)
@@ -31,6 +32,9 @@ public sealed class ToolScopeHandler : AuthorizationHandler<ToolScopeRequirement
             }
         }
 
+        if (!context.HasSucceeded)
+            logger.LogWarning("MCP scope {Scope} denied; trace_id={TraceId}",
+                requirement.Scope, Activity.Current?.TraceId.ToString());
         return Task.CompletedTask;
     }
 }

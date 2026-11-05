@@ -1,8 +1,8 @@
 # AcmeCommerce API demo
 
 A small read-only REST API for fictitious customers, orders and inventory, plus an
-MCP host with JWT authentication. The API uses .NET 10, Entity Framework Core and
-PostgreSQL. The Angular frontend offers a read-only view of the demo. The MCP host does not have tools yet.
+MCP host with JWT authentication and three read-only tools. The API uses .NET 10,
+Entity Framework Core and PostgreSQL. The Angular frontend offers a read-only view of the demo.
 
 ## Run locally
 
@@ -21,6 +21,10 @@ The API is available at `http://localhost:5080`; the protected MCP endpoint is a
 `python3 scripts/dev_token.py`. Both services bind to the local host only.
 For scope tests, add `--scope customers.read`, `--scope orders.read`, or
 `--scope inventory.read` (repeat the option to combine scopes).
+Each MCP tool requires its matching scope; a token without scopes sees an empty
+tool list. For example, `python3 scripts/dev_token.py --scope customers.read`
+prints a local test token. The MCP host calls the API internally and returns
+structured results with `status`, `data`, `error` and `traceId`.
 Stop them with `docker compose down`.
 The database volume is retained; the sample data is loaded only when the volume is empty.
 
@@ -51,13 +55,19 @@ the frontend at `/app/`, REST routes at the site root and protected MCP at `/mcp
 | `GET /health/live` | API process status |
 | `GET /health/ready` | API and database readiness |
 
+| MCP tool | Scope | Result |
+| --- | --- | --- |
+| `search_customer(query)` | `customers.read` | Up to 20 matching customers |
+| `get_order(orderId)` | `orders.read` | Order and items |
+| `check_inventory(sku)` | `inventory.read` | Product and available quantity |
+
 The sample data includes Alice's order `1002` (BRL 300) and 12 available units of
 `ABC-123`. The schema and sample data are in `database/001-init.sql`.
 
 ## Current limits
 
 The REST API has no authentication and uses only the supplied fictitious data.
-The MCP host requires a JWT for every protocol request and defines per-tool
-scope policies, but has no tools yet. Its local token flow is not an OAuth login
-flow for remote MCP clients. The database is initialized with a SQL script, not
+The MCP host requires a JWT for every protocol request and checks scope before
+calling the API. Its local token flow is not an OAuth login flow for remote MCP
+clients. The database is initialized with a SQL script, not
 EF Core migrations. This repository has no open-source license.
